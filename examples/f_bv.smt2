@@ -1,0 +1,8 @@
+(set-logic QF_BV)
+(declare-const x (_ BitVec 32))
+(declare-const y (_ BitVec 32))
+(declare-const z (_ BitVec 32))
+(assert (not (or (bvsgt x #x00000008) (bvslt y #x00000006))))
+(assert (bvsle z #x00000003))
+(check-sat)
+(exit)
