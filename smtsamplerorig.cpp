@@ -6,9 +6,6 @@
 #include <unordered_map>
 #include <algorithm>
 #include <fstream>
-#include <iostream>
-#include <stdlib.h>
-#include "megasampler.h"
 
 enum {
 STRAT_SMTBIT,
@@ -54,7 +51,7 @@ class SMTSampler {
     z3::expr smt_formula;
     std::vector<z3::func_decl> variables;
     std::vector<z3::func_decl> ind;
-    std::vector<z3::expr> internal; // vector of internal nodes expressions
+    std::vector<z3::expr> internal;
     std::vector<z3::expr> constraints;
     std::vector<std::vector<z3::expr>> soft_constraints;
     std::vector<std::pair<int,int>> cons_to_ind;
@@ -71,14 +68,9 @@ class SMTSampler {
 
     std::ofstream results_file;
 
-    //bat
-    //std::unordered_set<Z3_ast> ;
-
-
 public:
     SMTSampler(std::string input, int max_samples, double max_time, int strategy) : opt(c), params(c), solver(c), model(c), smt_formula(c), input_file(input), max_samples(max_samples), max_time(max_time), strategy(strategy) {
         z3::set_param("rewriter.expand_select_store", "true");
-//        std::cout<<"this is meeeeeeeeeeeeeee"<<std::endl;
         params.set("timeout", 5000u);
         opt.set(params);
         solver.set(params);
@@ -89,18 +81,16 @@ public:
         clock_gettime(CLOCK_REALTIME, &start_time);
         srand(start_time.tv_sec);
         // parse_cnf();
-        parse_smt(); // bat: parse-formula (visit) + solve initially
-        MEGASampler ms(model,smt_formula,c);
-        nnf_and_simplify(smt_formula);
+        parse_smt();
         results_file.open(input_file + ".samples");
-        while (true) { //bat: each iteration is an epoch. Will exit inside solve() or sample().
-            opt.push(); // because formula is constant, but other hard/soft constraints change between epochs
+        while (true) {
+            opt.push();
             solver.push();
-            for (z3::func_decl & v : ind) { //bat: Choose a random assignment: for variable-> if bv or bool, randomly choose a value to it.
+            for (z3::func_decl & v : ind) {
                 if (v.arity() > 0 || v.range().is_array())
                     continue;
                 switch (v.range().sort_kind()) {
-                case Z3_BV_SORT: // random assignment to bv
+                case Z3_BV_SORT:
                 {
 		    if (random_soft_bit) {
                         for (int i = 0; i < v.range().bv_size(); ++i) {
@@ -127,21 +117,21 @@ public:
                         z3::expr exp(c, ast);
                         assert_soft(v() == exp);
 		    }
-                    break; // from switch, bv case
+                    break;
                 }
-                case Z3_BOOL_SORT: // random assignment to bool var
+                case Z3_BOOL_SORT:
                     if (rand() % 2)
                         assert_soft(v());
                     else
                         assert_soft(!v());
-                    break; // from switch, bool case
+                    break;
                 default:
                     std::cout << "Invalid sort\n";
                     exit(1);
                 }
 
-            } //end for: random assignment chosen
-            z3::check_result result = solve(); //bat: find closest solution to random assignment (or some solution)
+            }
+            z3::check_result result = solve();
             if (result == z3::unsat) {
                 std::cout << "No solutions\n";
                 break;
@@ -153,36 +143,8 @@ public:
             opt.pop();
             solver.pop();
 
-            mysample(model);
-            epochs += 1;
-
+            sample(model);
         }
-    }
-
-    void nnf_and_simplify(z3::expr const & formula) {
-        z3::tactic simplify(c, "simplify");
-        z3::params p(c);
-        p.set("arith_lhs",true);
-        z3::tactic simp_with_params = with(simplify, p);
-        z3::tactic nnf(c, "nnf");
-        z3::tactic t_both = nnf & simp_with_params;
-        z3::goal g(c);
-        g.add(formula);
-
-        struct timespec start;
-        clock_gettime(CLOCK_REALTIME, &start);
-        z3::apply_result res = nnf(g);
-		std::cout<<res<<std::endl;
-        res = simplify(g);
-		std::cout<<res<<std::endl;
-        res = simp_with_params(g);
-		std::cout<<res<<std::endl;
-        res = t_both(g);
-		std::cout<<res<<std::endl;
-        struct timespec end;
-        clock_gettime(CLOCK_REALTIME, &end);
-        convert_time += duration(&start, &end);
-
     }
 
     void assert_soft(z3::expr const & e) {
@@ -206,15 +168,12 @@ public:
         std::cout << "Epochs " << epochs << ", Flips " << flips << ", UnsatInd " << unsat_ind_count << '/' << all_ind_count << ", UnsatInternal " << unsat_internal.size() << ", Calls " << solver_calls << '\n' << std::flush;
     }
 
-    std::unordered_set<Z3_ast> sub; //bat: internal nodes
-    std::unordered_set<Z3_ast> sup; //bat: nodes (=leaves?)
+    std::unordered_set<Z3_ast> sub;
+    std::unordered_set<Z3_ast> sup;
     std::unordered_set<std::string> var_names = {"bv", "true", "false"};
     int num_arrays = 0, num_bv = 0, num_bools = 0, num_bits = 0, num_uf = 0;
     int maxdepth = 0;
 
-    /*
-     * Find all variables in formula. Count variables of different sorts. Calculate tree depth.
-     */
     void visit(z3::expr e, int depth = 0) {
         if (sup.find(e) != sup.end())
             return;
@@ -263,17 +222,8 @@ public:
             visit(e.arg(i), depth + 1);
     }
 
-    /*
-     * parses file,
-     * converts to bool formula if needed,
-     * solves the formula,
-     * evaluates the formula under the model (for coverage?),
-     * calculates stats about the formula (visit function),
-     * prints formula statistics,
-     * and fills vector of internal nodes.
-     */
     void parse_smt() {
-        z3::expr formula = c.parse_file(input_file.c_str()); //bat: reads smt2 file
+        z3::expr formula = c.parse_file(input_file.c_str());
         Z3_ast ast = formula;
         if (ast == NULL) {
             std::cout << "Could not read input formula.\n";
@@ -324,9 +274,9 @@ public:
             opt.add(formula);
             solver.add(formula);
         } else {
-            opt.add(formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
-            solver.add(formula); //adds formula as constraint to normal solver
-            z3::check_result result = solve(); // will try to solve the formula and put model in model variable
+            opt.add(formula);
+            solver.add(formula);
+            z3::check_result result = solve();
             if (result == z3::unsat) {
                 std::cout << "Formula is unsat\n";
                 exit(0);
@@ -334,8 +284,7 @@ public:
                 std::cout << "Solver could not solve\n";
                 exit(0);
             }
-            evaluate(model, smt_formula, true, 1); // will evaluate smt_formula under model, with model_completion=true and coverage_enable=1
-            // result from evaluate is not checked since in this case the model must satisfy the formula (?)
+            evaluate(model, smt_formula, true, 1);
         }
 
         visit(smt_formula);
@@ -431,14 +380,6 @@ public:
         }
     }
 
-    void mysample(z3::model m) {
-            std::unordered_set<std::string> mutations;
-            std::string m_string = model_string(m, ind);
-            output(m, 0);
-
-
-    }
-
     void sample(z3::model m) {
         std::unordered_set<std::string> mutations;
         std::string m_string = model_string(m, ind);
@@ -452,7 +393,7 @@ public:
         cons_to_ind.clear();
         all_ind_count = 0;
 
-        if (flip_internal) { //bat: check what this is
+        if (flip_internal) {
             for (z3::expr & v : internal) {
                 z3::expr b = m.eval(v, true);
                 cons_to_ind.emplace_back(-1, -1);
@@ -636,6 +577,7 @@ public:
                 sigma = new_sigma;
         }
 
+        epochs += 1;
         opt.pop();
         solver.pop();
     }
@@ -838,9 +780,6 @@ public:
         return m;
     }
 
-    /*
-     * convert model to string, then send to output(string,int)
-     */
     bool output(z3::model m, int nmut) {
         std::string sample;
         if (convert) {
@@ -856,14 +795,6 @@ public:
         return output(sample, nmut);
     }
 
-    /*
-     * count samples ++,
-     * check if not timeout,
-     * convert string back to model (wtf?),
-     * evaluate formula under model (no coverage),
-     * if valid -> insert to all_mutations set (collects unique valid samples), valid samples ++,
-     * if valid and new -> print to results file
-     */
     bool output(std::string sample, int nmut) {
         samples += 1;
 
@@ -877,7 +808,7 @@ public:
         }
 
         z3::model m = gen_model(sample, variables);
-        z3::expr b = evaluate(m, smt_formula, true, 0); //evaluates smt_formula under m with model_completion=true and coverage_enable=0
+        z3::expr b = evaluate(m, smt_formula, true, 0);
 
         bool valid = b.bool_value() == Z3_L_TRUE;
         if (valid) {
@@ -887,7 +818,7 @@ public:
 	    }
 	    ++valid_samples;
             clock_gettime(CLOCK_REALTIME, &middle);
-	    evaluate(m, smt_formula, true, 2); // only if m is a valid solution, calculate coverage (with 2, not 1 - why?)
+	    evaluate(m, smt_formula, true, 2);
 	} else if (nmut <= 1) {
 	    std::cout << "Solution check failed, nmut = " << nmut << "\n";
 	    std::cout << b << "\n";
@@ -925,7 +856,7 @@ public:
         }
         z3::check_result result = z3::unknown;
         try {
-            result = opt.check(); //bat: first, solve a MAX-SMT instance
+            result = opt.check();
         } catch (z3::exception except) {
             std::cout << "Exception: " << except << "\n";
         }
@@ -933,7 +864,7 @@ public:
             model = opt.get_model();
         } else if (result == z3::unknown) {
             try {
-                result = solver.check(); //bat: if too long, solve a regular SMT instance (without any soft constraints)
+                result = solver.check();
             } catch (z3::exception except) {
                 std::cout << "Exception: " << except << "\n";
             }
@@ -1080,7 +1011,6 @@ int main(int argc, char * argv[]) {
         }
     }
     SMTSampler s(argv[argc-1], max_samples, max_time, strategy);
-//    MEGASampler s(argv[argc-1], max_samples, max_time, strategy);
     s.run();
     return 0;
 }
