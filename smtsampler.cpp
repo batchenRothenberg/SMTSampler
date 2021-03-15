@@ -89,7 +89,7 @@ public:
         srand(start_time.tv_sec);
         // parse_cnf();
         //parse_smt(); // bat: parse-formula (visit) + solve initially
-        MEGASampler ms(model,smt_formula,c);
+        MEGASampler ms(smt_formula);
         //nnf_and_simplify(smt_formula);
         results_file.open(input_file + ".samples");
         while (true) { //bat: each iteration is an epoch. Will exit inside solve() or sample().
