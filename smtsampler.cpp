@@ -88,9 +88,9 @@ public:
     void run() {
         srand(start_time.tv_sec);
         // parse_cnf();
-        parse_smt(); // bat: parse-formula (visit) + solve initially
+        //parse_smt(); // bat: parse-formula (visit) + solve initially
         MEGASampler ms(model,smt_formula,c);
-        nnf_and_simplify(smt_formula);
+        //nnf_and_simplify(smt_formula);
         results_file.open(input_file + ".samples");
         while (true) { //bat: each iteration is an epoch. Will exit inside solve() or sample().
             opt.push(); // because formula is constant, but other hard/soft constraints change between epochs
@@ -1147,6 +1147,6 @@ int main(int argc, char * argv[]) {
     s.calculate_coverage_under_model();
     s.compute_formula_statistics();
     s.print_formula_statistics();
-    //s.run();
+    s.run();
     return 0;
 }
