@@ -86,7 +86,6 @@ public:
     }
 
     void run() {
-        clock_gettime(CLOCK_REALTIME, &start_time);
         srand(start_time.tv_sec);
         // parse_cnf();
         parse_smt(); // bat: parse-formula (visit) + solve initially
@@ -263,6 +262,41 @@ public:
             visit(e.arg(i), depth + 1);
     }
 
+
+    void parse_formula(){
+    	std::cout<<"Parsing input file"<<std::endl;
+    	z3::expr formula = c.parse_file(input_file.c_str()); //bat: reads smt2 file
+		Z3_ast ast = formula;
+		if (ast == NULL) {
+			std::cout << "Could not read input formula.\n";
+			exit(1);
+		}
+		smt_formula = formula;
+    }
+
+    void initialize_solvers(){
+        opt.add(smt_formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
+        solver.add(smt_formula); //adds formula as constraint to normal solver
+    }
+
+    void get_initial_model(){
+    	z3::check_result result = solve(); // will try to solve the formula and put model in model variable
+		if (result == z3::unsat) {
+			std::cout << "Formula is unsat\n";
+			exit(0);
+		} else if (result == z3::unknown) {
+			std::cout << "Solver returned unknown\n";
+			exit(0);
+		} else {
+			std::cout<<"Formula is satisfiable\n";
+		}
+    }
+
+    void calculate_coverage_under_model(){
+    	std::cout<<"Calculating coverage data"<<std::endl;
+    	evaluate(model, smt_formula, true, 1);
+    }
+
     /*
      * parses file,
      * converts to bool formula if needed,
@@ -273,13 +307,7 @@ public:
      * and fills vector of internal nodes.
      */
     void parse_smt() {
-        z3::expr formula = c.parse_file(input_file.c_str()); //bat: reads smt2 file
-        Z3_ast ast = formula;
-        if (ast == NULL) {
-            std::cout << "Could not read input formula.\n";
-            exit(1);
-        }
-        smt_formula = formula;
+    	z3::expr formula = smt_formula;
         if (convert) {
             z3::tactic simplify(c, "simplify");
             z3::tactic bvarray2uf(c, "bvarray2uf");
@@ -352,6 +380,30 @@ public:
         for (Z3_ast e : sub) {
             internal.push_back(z3::expr(c, e));
         }
+    }
+
+    void set_start_time(){
+        clock_gettime(CLOCK_REALTIME, &start_time);
+    }
+
+    void print_formula_statistics(){
+    	std::cout << "Nodes " << sup.size() << '\n';
+		std::cout << "Internal nodes " << sub.size() << '\n';
+		std::cout << "Arrays " << num_arrays << '\n';
+		std::cout << "Bit-vectors " << num_bv << '\n';
+		std::cout << "Bools " << num_bools << '\n';
+		std::cout << "Bits " << num_bits << '\n';
+		std::cout << "Uninterpreted functions " << num_uf << '\n';
+    }
+
+    void compute_formula_statistics(){
+    	visit(smt_formula);
+    	if (!convert) {
+			ind = variables;
+		}
+		for (Z3_ast e : sub) {
+			internal.push_back(z3::expr(c, e));
+		}
     }
 
     z3::expr evaluate(z3::model m, z3::expr e, bool b, int n) {
@@ -928,16 +980,19 @@ public:
             result = opt.check(); //bat: first, solve a MAX-SMT instance
         } catch (z3::exception except) {
             std::cout << "Exception: " << except << "\n";
+            exit(1);
         }
         if (result == z3::sat) {
             model = opt.get_model();
         } else if (result == z3::unknown) {
+            std::cout << "MAX-SMT timed out"<< "\n";
             try {
                 result = solver.check(); //bat: if too long, solve a regular SMT instance (without any soft constraints)
             } catch (z3::exception except) {
                 std::cout << "Exception: " << except << "\n";
+                exit(1);
             }
-            std::cout << "MAX-SMT timed out: " << result << "\n";
+            std::cout << "SMT result: " << result << "\n";
             if (result == z3::sat) {
                 model = solver.get_model();
             }
@@ -1081,6 +1136,17 @@ int main(int argc, char * argv[]) {
     }
     SMTSampler s(argv[argc-1], max_samples, max_time, strategy);
 //    MEGASampler s(argv[argc-1], max_samples, max_time, strategy);
-    s.run();
+    s.parse_formula();
+    if (strategy == STRAT_SAT){
+    	std::cout<<"Conversion to SAT is temporarily not supported"<<std::endl;
+    	exit(0);
+    }
+    s.set_start_time();
+    s.initialize_solvers();
+    s.get_initial_model();
+    s.calculate_coverage_under_model();
+    s.compute_formula_statistics();
+    s.print_formula_statistics();
+    //s.run();
     return 0;
 }
