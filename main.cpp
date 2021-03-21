@@ -1,6 +1,16 @@
 #include "smtsampler.cpp"
 #include "megasampler.h"
 
+double duration(struct timespec * a, struct timespec * b) {
+    return (b->tv_sec - a->tv_sec) + 1.0e-9 * (b->tv_nsec - a->tv_nsec);
+}
+
+double get_time_diff(struct timespec start_time){
+    struct timespec end;
+    clock_gettime(CLOCK_REALTIME, &end);
+    return duration(&start_time, &end);
+}
+
 int main(int argc, char * argv[]) {
     int max_samples = 1000000;
     double max_time = 3600.0;
@@ -40,6 +50,8 @@ int main(int argc, char * argv[]) {
     s.set_start_time();
     s.initialize_solvers();
     s.get_initial_model();
+    double time = get_time_diff(s.get_start_time());
+    std::cout<<"Time to find initial model: "<<time<<std::endl;
     s.calculate_coverage_under_model();
     s.compute_formula_statistics();
     s.print_formula_statistics();

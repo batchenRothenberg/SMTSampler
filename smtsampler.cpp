@@ -386,6 +386,10 @@ public:
         clock_gettime(CLOCK_REALTIME, &start_time);
     }
 
+    struct timespec get_start_time(){
+        return start_time;
+    }
+
     void print_formula_statistics(){
     	std::cout << "Nodes " << sup.size() << '\n';
 		std::cout << "Internal nodes " << sub.size() << '\n';
