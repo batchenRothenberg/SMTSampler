@@ -262,23 +262,6 @@ public:
             visit(e.arg(i), depth + 1);
     }
 
-
-    void parse_formula(){
-    	std::cout<<"Parsing input file"<<std::endl;
-    	z3::expr formula = c.parse_file(input_file.c_str()); //bat: reads smt2 file
-		Z3_ast ast = formula;
-		if (ast == NULL) {
-			std::cout << "Could not read input formula.\n";
-			exit(1);
-		}
-		smt_formula = formula;
-    }
-
-    void initialize_solvers(){
-        opt.add(smt_formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
-        solver.add(smt_formula); //adds formula as constraint to normal solver
-    }
-
     void get_initial_model(){
     	z3::check_result result = solve(); // will try to solve the formula and put model in model variable
 		if (result == z3::unsat) {
@@ -380,10 +363,6 @@ public:
         for (Z3_ast e : sub) {
             internal.push_back(z3::expr(c, e));
         }
-    }
-
-    void set_start_time(){
-        clock_gettime(CLOCK_REALTIME, &start_time);
     }
 
     struct timespec get_start_time(){
