@@ -6,7 +6,7 @@
  */
 #include "sampler.h"
 
-Sampler::Sampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy) : original_formula(c), max_samples(max_samples), max_time(max_time), max_epoch_samples(max_epoch_samples), max_epoch_time(max_epoch_time), params(c), opt(c), solver(c){
+Sampler::Sampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy) : original_formula(c), max_samples(max_samples), max_time(max_time), max_epoch_samples(max_epoch_samples), max_epoch_time(max_epoch_time), params(c), opt(c), solver(c),model(c){
 	z3::set_param("rewriter.expand_select_store", "true");
     clock_gettime(CLOCK_REALTIME, &start_time);
     params.set("timeout", 5000u);
@@ -39,3 +39,41 @@ void Sampler::parse_formula(std::string input){
 	original_formula = formula;
 }
 
+void Sampler::get_initial_model(){
+	z3::check_result result = solve(); // will try to solve the formula and put model in model variable
+	if (result == z3::unsat) {
+		std::cout << "Formula is unsat\n";
+		exit(0);
+	} else if (result == z3::unknown) {
+		std::cout << "Solver returned unknown\n";
+		exit(0);
+	} else {
+		std::cout<<"Formula is satisfiable\n";
+	}
+}
+
+z3::check_result Sampler::solve(){
+	z3::check_result result = z3::unknown;
+	try {
+		result = opt.check(); //bat: first, solve a MAX-SMT instance
+	} catch (z3::exception except) {
+		std::cout << "Exception: " << except << "\n";
+		exit(1);
+	}
+	if (result == z3::sat) {
+		model = opt.get_model();
+	} else if (result == z3::unknown) {
+		std::cout << "MAX-SMT timed out"<< "\n";
+		try {
+			result = solver.check(); //bat: if too long, solve a regular SMT instance (without any soft constraints)
+		} catch (z3::exception except) {
+			std::cout << "Exception: " << except << "\n";
+			exit(1);
+		}
+		std::cout << "SMT result: " << result << "\n";
+		if (result == z3::sat) {
+			model = solver.get_model();
+		}
+	}
+	return result;
+}

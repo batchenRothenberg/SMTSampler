@@ -262,19 +262,6 @@ public:
             visit(e.arg(i), depth + 1);
     }
 
-    void get_initial_model(){
-    	z3::check_result result = solve(); // will try to solve the formula and put model in model variable
-		if (result == z3::unsat) {
-			std::cout << "Formula is unsat\n";
-			exit(0);
-		} else if (result == z3::unknown) {
-			std::cout << "Solver returned unknown\n";
-			exit(0);
-		} else {
-			std::cout<<"Formula is satisfiable\n";
-		}
-    }
-
     void calculate_coverage_under_model(){
     	std::cout<<"Calculating coverage data"<<std::endl;
     	evaluate(model, smt_formula, true, 1);
