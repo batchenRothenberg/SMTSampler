@@ -18,14 +18,14 @@ Sampler::Sampler(std::string input, int max_samples, double max_time, int max_ep
     solver.add(original_formula); //adds formula as constraint to normal solver
 }
 
-double Sampler::_duration(struct timespec * a, struct timespec * b) {
+double Sampler::duration(struct timespec * a, struct timespec * b) {
     return (b->tv_sec - a->tv_sec) + 1.0e-9 * (b->tv_nsec - a->tv_nsec);
 }
 
-double Sampler::_get_time_diff(struct timespec start_time){
+double Sampler::get_time_diff(struct timespec start_time){
     struct timespec end;
     clock_gettime(CLOCK_REALTIME, &end);
-    return _duration(&start_time, &end);
+    return duration(&start_time, &end);
 }
 
 void Sampler::parse_formula(std::string input){

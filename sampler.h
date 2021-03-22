@@ -69,8 +69,8 @@ public:
 
 
 private:
-	double _duration(struct timespec * a, struct timespec * b);
-	double _get_time_diff(struct timespec start_time);
+	double duration(struct timespec * a, struct timespec * b);
+	double get_time_diff(struct timespec start_time);
 	void parse_formula(std::string input);
 	/*
 	 * Tries to solve optimized formula (using opt).
