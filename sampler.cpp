@@ -110,3 +110,14 @@ void Sampler::print_stats(){
 	std::cout<<"printing stats"<<std::endl;
 	//TODO print all stats
 }
+
+z3::model Sampler::start_epoch(){
+	std::cout<<"starting epoch"<<std::endl;
+	return model;
+	//TODO start epoch
+}
+
+void Sampler::do_epoch(const z3::model & model){
+	std::cout<<"doing epoch"<<std::endl;
+	//TODO do epoch
+}

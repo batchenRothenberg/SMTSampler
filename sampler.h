@@ -11,6 +11,7 @@
 #include <z3++.h>
 #include <fstream> //for results_file
 #include <unordered_set>
+#include <map>
 
 class Sampler{
 
@@ -18,8 +19,6 @@ class Sampler{
 
 	struct timespec start_time;
 	struct timespec epoch_start_time;
-	double seed_time = 0.0;
-	double extension_time = 0.0;
 	int max_samples;
 	double max_time;
 	int max_epoch_samples;
@@ -34,6 +33,8 @@ class Sampler{
 
     int total_samples = 0;
     std::unordered_set<std::string> samples;
+
+    std::map<std::string, double> accumulated_times;
 
 public:
     /*
@@ -62,17 +63,17 @@ public:
      */
     bool is_epoch_limit_reached();
     /*
-     * TODO Generates and returns a model to begin a new epoch.
+     * Generates and returns a model to begin a new epoch.
      * Accumulates time in seed_time.
      */
     z3::model start_epoch();
     /*
-     * TODO Sampling epoch: generates multiple valid samples from the given model.
+     * Sampling epoch: generates multiple valid samples from the given model.
      * Accumulates time in extension_time.
      * Whenever a sample is produced we check if it was produced before (i.e., belongs to the samples set).
      * If not, it is added to the samples set and output to the output file.
      */
-    z3::model do_epoch(const z3::model & model);
+    void do_epoch(const z3::model & model);
     /*
      * Returns the time that has passed since the sampling process began (since this was created).
      */
