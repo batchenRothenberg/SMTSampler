@@ -16,16 +16,26 @@ Sampler::Sampler(std::string input, int max_samples, double max_time, int max_ep
 	parse_formula(input);
     opt.add(original_formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
     solver.add(original_formula); //adds formula as constraint to normal solver
+
+    results_file.open(input + ".samples");
 }
 
 double Sampler::duration(struct timespec * a, struct timespec * b) {
     return (b->tv_sec - a->tv_sec) + 1.0e-9 * (b->tv_nsec - a->tv_nsec);
 }
 
-double Sampler::get_time_diff(struct timespec start_time){
+double Sampler::get_elapsed_time(){
+	return elapsed_time_from(start_time);
+}
+
+double Sampler::get_epoch_elapsed_time(){
+	return elapsed_time_from(epoch_start_time);
+}
+
+double Sampler::elapsed_time_from(struct timespec start){
     struct timespec end;
     clock_gettime(CLOCK_REALTIME, &end);
-    return duration(&start_time, &end);
+    return duration(&start, &end);
 }
 
 void Sampler::parse_formula(std::string input){
@@ -39,13 +49,15 @@ void Sampler::parse_formula(std::string input){
 	original_formula = formula;
 }
 
-void Sampler::get_initial_model(){
+void Sampler::check_if_satisfiable(){
 	z3::check_result result = solve(); // will try to solve the formula and put model in model variable
 	if (result == z3::unsat) {
 		std::cout << "Formula is unsat\n";
+		finish();
 		exit(0);
 	} else if (result == z3::unknown) {
 		std::cout << "Solver returned unknown\n";
+		finish();
 		exit(0);
 	} else {
 		std::cout<<"Formula is satisfiable\n";
@@ -76,4 +88,25 @@ z3::check_result Sampler::solve(){
 		}
 	}
 	return result;
+}
+
+bool Sampler::is_time_limit_reached(){
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+    double elapsed = duration(&start_time, &now);
+    if (elapsed >= max_time) {
+        std::cout << "Stopping: timeout\n";
+        finish();
+    }
+}
+
+void Sampler::finish() {
+    print_stats();
+    results_file.close();
+    exit(0);
+}
+
+void Sampler::print_stats(){
+	std::cout<<"printing stats"<<std::endl;
+	//TODO print all stats
 }

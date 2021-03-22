@@ -52,9 +52,11 @@ int main(int argc, char * argv[]) {
     	std::cout<<"Conversion to SAT is temporarily not supported"<<std::endl;
     	exit(0);
     }
-    Sampler s(argv[argc-1], max_samples, max_time, max_epoch_samples, max_epoch_time, strategy);
 
-//    s.get_initial_model();
+    Sampler s(argv[argc-1], max_samples, max_time, max_epoch_samples, max_epoch_time, strategy);
+    s.check_if_satisfiable();
+
+
 //    double time = get_time_diff(s.get_start_time());
 //    std::cout<<"Time to find initial model: "<<time<<std::endl;
     //s.calculate_coverage_under_model();
