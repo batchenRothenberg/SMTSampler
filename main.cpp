@@ -14,6 +14,8 @@ double get_time_diff(struct timespec start_time){
 int main(int argc, char * argv[]) {
     int max_samples = 1000000;
     double max_time = 3600.0;
+    int max_epoch_samples = 10000;
+    double max_epoch_time = 600.0;
     int strategy = STRAT_SMTBIT;
     if (argc < 2) {
         std::cout << "Argument required: input file\n";
@@ -21,11 +23,17 @@ int main(int argc, char * argv[]) {
     }
     bool arg_samples = false;
     bool arg_time = false;
+    bool arg_epoch_samples = false;
+    bool arg_epoch_time = false;
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-n") == 0)
             arg_samples = true;
         else if (strcmp(argv[i], "-t") == 0)
             arg_time = true;
+        else if (strcmp(argv[i], "-en") == 0)
+            arg_epoch_samples = true;
+        else if (strcmp(argv[i], "-et") == 0)
+            arg_epoch_time = true;
         else if (strcmp(argv[i], "--smtbit") == 0)
             strategy = STRAT_SMTBIT;
         else if (strcmp(argv[i], "--smtbv") == 0)
@@ -38,6 +46,13 @@ int main(int argc, char * argv[]) {
         } else if (arg_time) {
             arg_time = false;
             max_time = atof(argv[i]);
+        }
+        else if (arg_epoch_samples) {
+            arg_epoch_samples = false;
+            max_epoch_samples = atoi(argv[i]);
+        } else if (arg_epoch_time) {
+            arg_epoch_time = false;
+            max_epoch_time = atof(argv[i]);
         }
     }
     SMTSampler s(argv[argc-1], max_samples, max_time, strategy);
