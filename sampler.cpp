@@ -9,13 +9,15 @@
 Sampler::Sampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy) : original_formula(c), max_samples(max_samples), max_time(max_time), max_epoch_samples(max_epoch_samples), max_epoch_time(max_epoch_time), params(c), opt(c), solver(c),model(c){
 	z3::set_param("rewriter.expand_select_store", "true");
     clock_gettime(CLOCK_REALTIME, &start_time);
-    params.set("timeout", 5000u);
+    params.set("timeout", 50000u);
     opt.set(params);
     solver.set(params);
 
 	parse_formula(input);
     opt.add(original_formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
     solver.add(original_formula); //adds formula as constraint to normal solver
+
+    compute_and_print_formula_stats();
 
     results_file.open(input + ".samples");
 }
@@ -39,7 +41,7 @@ double Sampler::elapsed_time_from(struct timespec start){
 }
 
 void Sampler::parse_formula(std::string input){
-	std::cout<<"Parsing input file"<<std::endl;
+	std::cout<<"Parsing input file: "<<input<<std::endl;
 	z3::expr formula = c.parse_file(input.c_str()); //bat: reads smt2 file
 	Z3_ast ast = formula;
 	if (ast == NULL) {
@@ -120,4 +122,79 @@ z3::model Sampler::start_epoch(){
 void Sampler::do_epoch(const z3::model & model){
 	std::cout<<"doing epoch"<<std::endl;
 	//TODO do epoch
+}
+
+void Sampler::compute_and_print_formula_stats(){
+	// TODO save formula theory
+	_compute_formula_stats_aux(original_formula);
+//	std::cout << "Nodes " << sup.size() << '\n';
+//	std::cout << "Internal nodes " << sub.size() << '\n';
+	std::cout << "-------------FORMULA STATISTICS-------------" << '\n';
+	std::cout << "Arrays " << num_arrays << '\n';
+	std::cout << "Bit-vectors " << num_bv << '\n';
+	std::cout << "Bools " << num_bools << '\n';
+	std::cout << "Bits " << num_bits << '\n';
+	std::cout << "Uninterpreted functions " << num_uf << '\n';
+	std::cout << "Ints " << num_ints << '\n';
+	std::cout << "Reals " << num_reals << '\n';
+	std::cout << "Formula tree depth " << max_depth << '\n';
+	std::cout << "--------------------------------------------" << '\n';
+
+}
+
+void Sampler::_compute_formula_stats_aux(z3::expr e, int depth){
+
+    if (sup.find(e) != sup.end())
+        return;
+    assert(e.is_app());
+    z3::func_decl fd = e.decl();
+    if (e.is_const()) {
+        std::string name = fd.name().str();
+        if (var_names.find(name) == var_names.end()) {
+            var_names.insert(name);
+            // std::cout << "declaration: " << fd << '\n';
+            variables.push_back(fd);
+            if (fd.range().is_array()) {
+               ++num_arrays;
+            } else if (fd.is_const()) {
+                switch (fd.range().sort_kind()) {
+                case Z3_BV_SORT:
+                    ++num_bv;
+                    num_bits += fd.range().bv_size();
+                    break;
+                case Z3_BOOL_SORT:
+                    ++num_bools;
+                    ++num_bits;
+                    break;
+                case Z3_INT_SORT:
+                    ++num_ints;
+                    break;
+                case Z3_REAL_SORT:
+                    ++num_reals;
+                    break;
+                default:
+                    std::cout << "Invalid sort\n";
+                    exit(1);
+                }
+            }
+        }
+    } else if (fd.decl_kind() == Z3_OP_UNINTERPRETED) {
+        std::string name = fd.name().str();
+        if (var_names.find(name) == var_names.end()) {
+            var_names.insert(name);
+            // std::cout << "declaration: " << fd << '\n';
+            variables.push_back(fd);
+            ++num_uf;
+        }
+    }
+//    if (e.is_bool() || e.is_bv()) {
+//        sub.insert(e);
+//    }
+    sup.insert(e);
+    if (depth > max_depth){
+        max_depth = depth;
+    }
+    for (int i = 0; i < e.num_args(); ++i){
+    	_compute_formula_stats_aux(e.arg(i), depth + 1);
+    }
 }

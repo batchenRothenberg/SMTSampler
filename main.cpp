@@ -72,10 +72,9 @@ int main(int argc, char * argv[]) {
         }
     } catch (z3::exception& except) {
         std::cout << "Termination due to: " << except << "\n";
-        s.finish();
-        return 0;
     }
-
+    s.finish();
+    return 0;
 
 
 //    double time = get_time_diff(s.get_start_time());

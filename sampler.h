@@ -12,6 +12,7 @@
 #include <fstream> //for results_file
 #include <unordered_set>
 #include <map>
+#include <vector>
 
 class Sampler{
 
@@ -23,6 +24,13 @@ class Sampler{
 	double max_time;
 	int max_epoch_samples;
 	double max_epoch_time;
+    std::map<std::string, double> accumulated_times;
+
+    int num_arrays = 0, num_bv = 0, num_bools = 0, num_bits = 0, num_uf = 0, num_ints = 0, num_reals = 0;
+    std::vector<z3::func_decl> variables;
+    std::unordered_set<std::string> var_names = {"bv", "true", "false"};
+    int max_depth = 0;
+    std::unordered_set<Z3_ast> sup; //bat: nodes (=leaves?)
 
     z3::context c;
     z3::expr original_formula;
@@ -34,7 +42,6 @@ class Sampler{
     int total_samples = 0;
     std::unordered_set<std::string> samples;
 
-    std::map<std::string, double> accumulated_times;
 
 public:
     /*
@@ -91,6 +98,8 @@ protected:
 	double duration(struct timespec * a, struct timespec * b);
 	double elapsed_time_from(struct timespec start);
 	void parse_formula(std::string input);
+	void compute_and_print_formula_stats();
+    void _compute_formula_stats_aux(z3::expr e, int depth = 0);
 	/*
 	 * Tries to solve optimized formula (using opt).
 	 * If too long, resorts to regular formula (using solver).
