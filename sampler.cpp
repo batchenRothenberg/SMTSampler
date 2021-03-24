@@ -122,6 +122,7 @@ z3::model Sampler::start_epoch(){
     opt.push(); // because formula is constant, but other hard/soft constraints change between epochs
     choose_random_assignment();
     z3::check_result result = solve(); //bat: find closest solution to random assignment (or some solution)
+    assert(result != z3::unsat);
     opt.pop();
     epochs += 1;
 	return model;
