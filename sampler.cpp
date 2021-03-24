@@ -133,45 +133,54 @@ void Sampler::choose_random_assignment(){
 		if (v.arity() > 0 || v.range().is_array())
 			continue;
 		switch (v.range().sort_kind()) {
-		case Z3_BV_SORT: // random assignment to bv
-		{
-			if (random_soft_bit) {
-				for (int i = 0; i < v.range().bv_size(); ++i) {
-					if (rand() % 2)
-						assert_soft(v().extract(i, i) == c.bv_val(0, 1));
-					else
-						assert_soft(v().extract(i, i) != c.bv_val(0, 1));
+			case Z3_BV_SORT: // random assignment to bv
+			{
+				if (random_soft_bit) {
+					for (int i = 0; i < v.range().bv_size(); ++i) {
+						if (rand() % 2)
+							assert_soft(v().extract(i, i) == c.bv_val(0, 1));
+						else
+							assert_soft(v().extract(i, i) != c.bv_val(0, 1));
+					}
+				} else {
+					std::string n;
+					char num[10];
+					int i = v.range().bv_size();
+					if (i % 4) {
+						snprintf(num, 10, "%x", rand() & ((1<<(i%4)) - 1));
+						n += num;
+						i -= (i % 4);
+					}
+					while (i) {
+						snprintf(num, 10, "%x", rand() & 15);
+						n += num;
+						i -= 4;
+					}
+					Z3_ast ast = parse_bv(n.c_str(), v.range(), c);
+					z3::expr exp(c, ast);
+					assert_soft(v() == exp);
 				}
-			} else {
-				std::string n;
-				char num[10];
-				int i = v.range().bv_size();
-				if (i % 4) {
-					snprintf(num, 10, "%x", rand() & ((1<<(i%4)) - 1));
-					n += num;
-					i -= (i % 4);
-				}
-				while (i) {
-					snprintf(num, 10, "%x", rand() & 15);
-					n += num;
-					i -= 4;
-				}
-				Z3_ast ast = parse_bv(n.c_str(), v.range(), c);
-				z3::expr exp(c, ast);
-				assert_soft(v() == exp);
+				break; // from switch, bv case
 			}
-			break; // from switch, bv case
-		}
-		case Z3_BOOL_SORT: // random assignment to bool var
-			if (rand() % 2)
-				assert_soft(v());
-			else
-				assert_soft(!v());
-			break; // from switch, bool case
-		default:
-			//TODO add int and real
-			std::cout << "Invalid sort\n";
-			exit(1);
+			case Z3_BOOL_SORT: // random assignment to bool var
+				if (rand() % 2)
+					assert_soft(v());
+				else
+					assert_soft(!v());
+				break; // from switch, bool case
+			case Z3_INT_SORT: // random assignment to bool var
+			{
+				int random = rand();
+				if (rand() % 2)
+					assert_soft(v() == c.int_val(random));
+				else
+					assert_soft(v() == c.int_val(-random));
+			}
+				break; // from switch, int case
+			default:
+				//TODO add real
+				std::cout << "Invalid sort\n";
+				exit(1);
 		}
     } //end for: random assignment chosen
 }
