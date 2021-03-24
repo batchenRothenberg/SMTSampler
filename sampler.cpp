@@ -72,6 +72,7 @@ z3::check_result Sampler::solve(){
 		result = opt.check(); //bat: first, solve a MAX-SMT instance
 	} catch (z3::exception except) {
 		std::cout << "Exception: " << except << "\n";
+		//TODO exception "canceled" can be thrown when Timeout is reached
 		exit(1);
 	}
 	if (result == z3::sat) {
@@ -115,8 +116,60 @@ void Sampler::print_stats(){
 
 z3::model Sampler::start_epoch(){
 	std::cout<<"starting epoch"<<std::endl;
+    opt.push(); // because formula is constant, but other hard/soft constraints change between epochs
+    choose_random_assignment();
+    z3::check_result result = solve(); //bat: find closest solution to random assignment (or some solution)
+    opt.pop();
+    epochs += 1;
 	return model;
-	//TODO start epoch
+}
+
+void Sampler::choose_random_assignment(){
+    for (z3::func_decl & v : variables) { //bat: Choose a random assignment: for variable-> if bv or bool, randomly choose a value to it.
+		if (v.arity() > 0 || v.range().is_array())
+			continue;
+		switch (v.range().sort_kind()) {
+		case Z3_BV_SORT: // random assignment to bv
+		{
+			if (random_soft_bit) {
+				for (int i = 0; i < v.range().bv_size(); ++i) {
+					if (rand() % 2)
+						assert_soft(v().extract(i, i) == c.bv_val(0, 1));
+					else
+						assert_soft(v().extract(i, i) != c.bv_val(0, 1));
+				}
+			} else {
+				std::string n;
+				char num[10];
+				int i = v.range().bv_size();
+				if (i % 4) {
+					snprintf(num, 10, "%x", rand() & ((1<<(i%4)) - 1));
+					n += num;
+					i -= (i % 4);
+				}
+				while (i) {
+					snprintf(num, 10, "%x", rand() & 15);
+					n += num;
+					i -= 4;
+				}
+				Z3_ast ast = parse_bv(n.c_str(), v.range(), c);
+				z3::expr exp(c, ast);
+				assert_soft(v() == exp);
+			}
+			break; // from switch, bv case
+		}
+		case Z3_BOOL_SORT: // random assignment to bool var
+			if (rand() % 2)
+				assert_soft(v());
+			else
+				assert_soft(!v());
+			break; // from switch, bool case
+		default:
+			//TODO add int and real
+			std::cout << "Invalid sort\n";
+			exit(1);
+		}
+    } //end for: random assignment chosen
 }
 
 void Sampler::do_epoch(const z3::model & model){
@@ -197,4 +250,8 @@ void Sampler::_compute_formula_stats_aux(z3::expr e, int depth){
     for (int i = 0; i < e.num_args(); ++i){
     	_compute_formula_stats_aux(e.arg(i), depth + 1);
     }
+}
+
+void Sampler::assert_soft(z3::expr const & e) {
+    opt.add(e, 1);
 }

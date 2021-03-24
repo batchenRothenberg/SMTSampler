@@ -14,10 +14,14 @@
 #include <map>
 #include <vector>
 
+Z3_ast parse_bv(char const * n, Z3_sort s, Z3_context ctx);
+
 class Sampler{
 
-    std::ofstream results_file;
+    //Settings
+    bool random_soft_bit = false; //TODO enable change from cmd line
 
+    //Time management
 	struct timespec start_time;
 	struct timespec epoch_start_time;
 	int max_samples;
@@ -26,12 +30,17 @@ class Sampler{
 	double max_epoch_time;
     std::map<std::string, double> accumulated_times;
 
+    //Formula statistics
     int num_arrays = 0, num_bv = 0, num_bools = 0, num_bits = 0, num_uf = 0, num_ints = 0, num_reals = 0;
     std::vector<z3::func_decl> variables;
     std::unordered_set<std::string> var_names = {"bv", "true", "false"};
     int max_depth = 0;
     std::unordered_set<Z3_ast> sup; //bat: nodes (=leaves?)
 
+    //Other statistics
+    int epochs = 0;
+
+    //Z3 objects
     z3::context c;
     z3::expr original_formula;
     z3::params params;
@@ -39,6 +48,8 @@ class Sampler{
     z3::solver solver;
     z3::model model;
 
+    //Samples
+    std::ofstream results_file;
     int total_samples = 0;
     std::unordered_set<std::string> samples;
 
@@ -100,6 +111,12 @@ protected:
 	void parse_formula(std::string input);
 	void compute_and_print_formula_stats();
     void _compute_formula_stats_aux(z3::expr e, int depth = 0);
+    void assert_soft(z3::expr const & e);
+    /*
+     * Assigns a random value to all variables and
+     * adds equivalence constraints as soft constraints to opt.
+     */
+    void choose_random_assignment();
 	/*
 	 * Tries to solve optimized formula (using opt).
 	 * If too long, resorts to regular formula (using solver).
