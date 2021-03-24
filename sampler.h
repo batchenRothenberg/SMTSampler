@@ -57,8 +57,9 @@ class Sampler{
 public:
     /*
      * Initializes limits and parameters.
+     * Seeds random number generator.
      * Parses input file to get formula and initializes solvers with formula.
-     * TODO Computes formula statistics.
+     * Computes formula statistics.
      * Creates output file (stored in results_file).
      */
     Sampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy);

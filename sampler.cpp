@@ -9,6 +9,9 @@
 Sampler::Sampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy) : original_formula(c), max_samples(max_samples), max_time(max_time), max_epoch_samples(max_epoch_samples), max_epoch_time(max_epoch_time), params(c), opt(c), solver(c),model(c){
 	z3::set_param("rewriter.expand_select_store", "true");
     clock_gettime(CLOCK_REALTIME, &start_time);
+
+    srand(start_time.tv_sec);
+
     params.set("timeout", 50000u);
     opt.set(params);
     solver.set(params);
