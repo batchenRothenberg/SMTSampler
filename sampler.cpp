@@ -118,7 +118,8 @@ void Sampler::print_stats(){
 }
 
 z3::model Sampler::start_epoch(){
-	std::cout<<"starting epoch"<<std::endl;
+	std::cout<<"Starting an epoch"<<std::endl;
+
     opt.push(); // because formula is constant, but other hard/soft constraints change between epochs
     choose_random_assignment();
     z3::check_result result = solve(); //bat: find closest solution to random assignment (or some solution)
@@ -193,8 +194,7 @@ void Sampler::choose_random_assignment(){
 }
 
 void Sampler::do_epoch(const z3::model & model){
-	std::cout<<"doing epoch"<<std::endl;
-	//TODO do epoch
+	std::cout<<"Epoch: keeping only original model"<<std::endl;
 }
 
 void Sampler::compute_and_print_formula_stats(){
