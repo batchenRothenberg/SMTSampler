@@ -64,16 +64,24 @@ int main(int argc, char * argv[]) {
     }
 
     Sampler s(argv[argc-1], max_samples, max_time, max_epoch_samples, max_epoch_time, strategy);
+	s.set_timer_on("total");
+    s.set_timer_on("initial_solving");
     s.check_if_satisfiable();
+    s.accumulate_time("initial_solving");
     try{
         for (int epochs=0; epochs<max_epochs; epochs++){
+        	s.set_timer_on("start_epoch");
         	const z3::model & m = s.start_epoch();
-        	std::cout<<m<<std::endl;
+        	s.accumulate_time("start_epoch");
+//        	std::cout<<m<<std::endl;
+        	s.set_timer_on("do_epoch");
         	s.do_epoch(m);
+        	s.accumulate_time("do_epoch");
         }
     } catch (z3::exception& except) {
         std::cout << "Termination due to: " << except << "\n";
     }
+	s.accumulate_time("total");
     s.finish();
     return 0;
 

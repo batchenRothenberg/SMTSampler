@@ -31,6 +31,8 @@ class Sampler{
 	double max_time;
 	int max_epoch_samples;
 	double max_epoch_time;
+    std::map<std::string, struct timespec> timer_start_times;
+    std::map<std::string, bool> is_timer_on;
     std::map<std::string, double> accumulated_times;
 
     //Formula statistics
@@ -110,6 +112,16 @@ public:
      * Prints stats and closes results file.
      */
     void finish();
+    /*
+     * Starts measuring time under the given category.
+     */
+    void set_timer_on(const std::string & category);
+    /*
+     * Stops measuring time under the given category (should always be preceded by a matching call to set_timer_on(category)).
+     * The time difference from when the timer went on to now is added to the accumulated time for that category
+     * (in map accumulated_times).
+     */
+    void accumulate_time(const std::string & category);
 
 protected:
 	double duration(struct timespec * a, struct timespec * b);

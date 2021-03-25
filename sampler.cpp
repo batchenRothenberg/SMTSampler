@@ -117,7 +117,12 @@ void Sampler::finish() {
 }
 
 void Sampler::print_stats(){
-	std::cout<<"printing stats"<<std::endl;
+	std::cout<<"---------SOLVING STATISTICS--------"<<std::endl;
+	for(auto it = accumulated_times.cbegin(); it != accumulated_times.cend(); ++it)
+	{
+	    std::cout << it->first << " time: " << it->second << std::endl;
+	}
+	std::cout<<"-----------------------------------"<<std::endl;
 	//TODO print all stats
 }
 
@@ -387,3 +392,30 @@ std::string Sampler::model_to_string(const z3::model & m){
     return s;
 }
 
+void Sampler::set_timer_on(const std::string & category){
+	if (is_timer_on.find(category)!=is_timer_on.end() && is_timer_on[category]){ // category was inserted to map and its value was set to true
+		std::cout<<"WARNING: starting timer twice for category "<<category<<std::endl;
+	}
+	struct timespec now;
+	clock_gettime(CLOCK_REALTIME, &now);
+	timer_start_times[category] = now;
+	is_timer_on[category] = true;
+}
+
+void Sampler::accumulate_time(const std::string & category){
+	if (is_timer_on.find(category)==is_timer_on.end() || is_timer_on[category]==false){ // timer never went on
+			std::cout<<"ERROR: cannot stop timer for category: "<<category<<". Timer was never started."<<std::endl;
+			finish();
+			exit(1); //TODO add exception handling
+	}
+
+	assert(timer_start_times.find(category)!=timer_start_times.end());
+	struct timespec now;
+	clock_gettime(CLOCK_REALTIME, &now);
+	if (accumulated_times.find(category)==accumulated_times.end()){
+		accumulated_times[category] = 0.0;
+	}
+    accumulated_times[category] += duration(&timer_start_times[category], &now);
+
+    is_timer_on[category] = false;
+}
