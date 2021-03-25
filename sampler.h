@@ -13,8 +13,11 @@
 #include <unordered_set>
 #include <map>
 #include <vector>
+#include <algorithm> // for std::find
+
 
 Z3_ast parse_bv(char const * n, Z3_sort s, Z3_context ctx);
+std::string bv_string(Z3_ast ast, Z3_context ctx);
 
 class Sampler{
 
@@ -39,6 +42,9 @@ class Sampler{
 
     //Other statistics
     int epochs = 0;
+    int total_samples = 0; // how many samples we stumbled upon (repetitions are counted multiple times)
+    int valid_samples = 0; // how many samples were valid (repetitions are counted multiple times)
+    int unique_valid_samples = 0; //how many different valid samples were found (should always equal the size of the samples set and the number of lines in the results file)
 
     //Z3 objects
     z3::context c;
@@ -50,7 +56,6 @@ class Sampler{
 
     //Samples
     std::ofstream results_file;
-    int total_samples = 0;
     std::unordered_set<std::string> samples;
 
 
@@ -113,6 +118,8 @@ protected:
 	void compute_and_print_formula_stats();
     void _compute_formula_stats_aux(z3::expr e, int depth = 0);
     void assert_soft(z3::expr const & e);
+    void save_and_output_sample_if_unique(const std::string & sample);
+    std::string model_to_string(const z3::model & model);
     /*
      * Assigns a random value to all variables and
      * adds equivalence constraints as soft constraints to opt.

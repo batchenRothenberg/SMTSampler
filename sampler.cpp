@@ -124,7 +124,14 @@ z3::model Sampler::start_epoch(){
     z3::check_result result = solve(); //bat: find closest solution to random assignment (or some solution)
     assert(result != z3::unsat);
     opt.pop();
-    epochs += 1;
+
+    epochs++;
+    total_samples++;
+    valid_samples++;
+
+//    save_and_output_sample_if_unique(Z3_model_to_string(c,model));
+    save_and_output_sample_if_unique(model_to_string(model));
+
 	return model;
 }
 
@@ -268,3 +275,113 @@ void Sampler::_compute_formula_stats_aux(z3::expr e, int depth){
 void Sampler::assert_soft(z3::expr const & e) {
     opt.add(e, 1);
 }
+
+void Sampler::save_and_output_sample_if_unique(const std::string & sample){
+    auto res = samples.insert(sample);
+    if (res.second) {
+    	unique_valid_samples++;
+    	results_file << unique_valid_samples << ": " << sample << std::endl;
+    }
+}
+
+std::string Sampler::model_to_string(const z3::model & m){
+    std::string s;
+    for (z3::func_decl & v : variables) {
+    	s += v.name().str() + ':';
+        if (v.range().is_array()) { // array case
+            z3::expr e = m.get_const_interp(v);
+            Z3_func_decl as_array = Z3_get_as_array_func_decl(c, e);
+            if (as_array) {
+				z3::func_interp f = m.get_func_interp(to_func_decl(c, as_array));
+				std::string num = "[";
+				num += std::to_string(f.num_entries());
+				s += num + ';';
+				std::string def = bv_string(f.else_value(), c);
+				s += def + ';';
+				for (int j = 0; j < f.num_entries(); ++j) {
+					std::string arg = bv_string(f.entry(j).arg(0), c);
+					std::string val = bv_string(f.entry(j).value(), c);
+					s += arg + ';';
+					s += val + ';';
+				}
+				s += "]";
+            } else {
+                std::vector<std::string> args;
+                std::vector<std::string> values;
+                while (e.decl().name().str() == "store") {
+                    std::string arg = bv_string(e.arg(1), c);
+                    if (std::find(args.begin(), args.end(), arg) != args.end())
+                        continue;
+                    args.push_back(arg);
+                    values.push_back(bv_string(e.arg(2), c));
+                    e = e.arg(0);
+                }
+				std::string num = "[";
+				num += std::to_string(args.size());
+				s += num + ';';
+				std::string def = bv_string(e.arg(0), c);
+				s += def + ';';
+				for (int j = args.size() - 1; j >= 0; --j) {
+					std::string arg = args[j];
+					std::string val = values[j];
+					s += arg + ';';
+					s += val + ';';
+				}
+				s += "]";
+            }
+        } else if (v.is_const()) { // BV, Int case
+            z3::expr b = m.get_const_interp(v);
+            Z3_ast ast = b;
+            switch (v.range().sort_kind()) {
+            case Z3_BV_SORT:
+            {
+                if (!ast) {
+                    s += bv_string(c.bv_val(0, v.range().bv_size()), c) + ';';
+                } else {
+                    s += bv_string(b, c) + ';';
+                }
+                break;
+            }
+            case Z3_BOOL_SORT:
+            {
+                if (!ast) {
+                    s += std::to_string(false) + ';';
+                } else {
+                    s += std::to_string(b.bool_value() == Z3_L_TRUE) + ';';
+                }
+                break;
+            }
+            case Z3_INT_SORT:
+            {
+                if (!ast) {
+                    s += std::to_string(0) + ";";
+                } else {
+                	s += b.to_string() + ";";
+                }
+                break;
+            }
+            default:
+                    std::cout << "Invalid sort\n";
+                    exit(1);
+            }
+        } else { // Uninterpreted function case
+            z3::func_interp f = m.get_func_interp(v);
+            std::string num = "(";
+            num += std::to_string(f.num_entries());
+            s += num + ';';
+            std::string def = bv_string(f.else_value(), c);
+            s += def + ';';
+            for (int j = 0; j < f.num_entries(); ++j) {
+                for (int k = 0; k < f.entry(j).num_args(); ++k) {
+                    std::string arg = bv_string(f.entry(j).arg(k), c);
+                    s += arg + ';';
+                }
+                std::string val = bv_string(f.entry(j).value(), c);
+                s += val + ';';
+            }
+            s += ")";
+        }
+    }
+    return s;
+}
+
