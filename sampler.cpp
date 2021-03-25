@@ -70,10 +70,10 @@ void Sampler::check_if_satisfiable(){
 }
 
 z3::check_result Sampler::solve(){
-	std::cout<<"Opt assertions:"<<std::endl;
-	std::cout<<opt.assertions()<<std::endl;
-	std::cout<<"Opt objectives:"<<std::endl;
-	std::cout<<opt.objectives()<<std::endl;
+//	std::cout<<"Opt assertions:"<<std::endl;
+//	std::cout<<opt.assertions()<<std::endl;
+//	std::cout<<"Opt objectives:"<<std::endl;
+//	std::cout<<opt.objectives()<<std::endl;
 	z3::check_result result = z3::unknown;
 	try {
 		result = opt.check(); //bat: first, solve a MAX-SMT instance
