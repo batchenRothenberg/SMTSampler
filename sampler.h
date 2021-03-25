@@ -88,12 +88,12 @@ public:
     bool is_epoch_limit_reached();
     /*
      * Generates and returns a model to begin a new epoch.
-     * Accumulates time in seed_time.
+     * TODO Accumulates time in seed_time.
      */
     z3::model start_epoch();
     /*
      * Sampling epoch: generates multiple valid samples from the given model.
-     * Accumulates time in extension_time.
+     * TODO Accumulates time in extension_time.
      * Whenever a sample is produced we check if it was produced before (i.e., belongs to the samples set).
      * If not, it is added to the samples set and output to the output file.
      */

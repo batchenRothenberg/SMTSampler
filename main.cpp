@@ -68,6 +68,7 @@ int main(int argc, char * argv[]) {
     try{
         for (int epochs=0; epochs<max_epochs; epochs++){
         	const z3::model & m = s.start_epoch();
+        	std::cout<<m<<std::endl;
         	s.do_epoch(m);
         }
     } catch (z3::exception& except) {

@@ -70,6 +70,10 @@ void Sampler::check_if_satisfiable(){
 }
 
 z3::check_result Sampler::solve(){
+	std::cout<<"Opt assertions:"<<std::endl;
+	std::cout<<opt.assertions()<<std::endl;
+	std::cout<<"Opt objectives:"<<std::endl;
+	std::cout<<opt.objectives()<<std::endl;
 	z3::check_result result = z3::unknown;
 	try {
 		result = opt.check(); //bat: first, solve a MAX-SMT instance
@@ -216,7 +220,6 @@ void Sampler::compute_and_print_formula_stats(){
 }
 
 void Sampler::_compute_formula_stats_aux(z3::expr e, int depth){
-
     if (sup.find(e) != sup.end())
         return;
     assert(e.is_app());
@@ -225,7 +228,6 @@ void Sampler::_compute_formula_stats_aux(z3::expr e, int depth){
         std::string name = fd.name().str();
         if (var_names.find(name) == var_names.end()) {
             var_names.insert(name);
-            // std::cout << "declaration: " << fd << '\n';
             variables.push_back(fd);
             if (fd.range().is_array()) {
                ++num_arrays;
