@@ -108,7 +108,11 @@ public:
      * (in map accumulated_times).
      */
     void accumulate_time(const std::string & category);
-
+    /*
+     * Checks if global timeout is reached.
+     * If so, calls finish.
+     */
+    bool is_time_limit_reached();
     // TODO handle timeouts
 
 
