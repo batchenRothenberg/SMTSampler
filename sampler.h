@@ -77,25 +77,11 @@ public:
      */
     void check_if_satisfiable();
     /*
-     * TODO Checks if the global time limit was reached.
-     */
-    bool is_time_limit_reached();
-    /*
-     * TODO Checks if one of the global limits (time,samples) was reached.
-     */
-    bool is_limit_reached();
-    /*
-     * TODO Checks if one of the epoch limits (time,samples) was reached.
-     */
-    bool is_epoch_limit_reached();
-    /*
      * Generates and returns a model to begin a new epoch.
-     * TODO Accumulates time in seed_time.
      */
     z3::model start_epoch();
     /*
      * Sampling epoch: generates multiple valid samples from the given model.
-     * TODO Accumulates time in extension_time.
      * Whenever a sample is produced we check if it was produced before (i.e., belongs to the samples set).
      * If not, it is added to the samples set and output to the output file.
      */
@@ -122,6 +108,9 @@ public:
      * (in map accumulated_times).
      */
     void accumulate_time(const std::string & category);
+
+    // TODO handle timeouts
+
 
 protected:
 	double duration(struct timespec * a, struct timespec * b);
