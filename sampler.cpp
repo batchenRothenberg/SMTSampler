@@ -122,8 +122,11 @@ void Sampler::print_stats(){
 	{
 	    std::cout << it->first << " time: " << it->second << std::endl;
 	}
+	std::cout<<"Epochs: "<<epochs<<std::endl;
+	std::cout<<"Assignments considered (with repetitions): "<<total_samples<<std::endl;
+	std::cout<<"Models (with repetitions): "<<valid_samples<<std::endl;
+	std::cout<<"Unique models (# samples in file): "<<unique_valid_samples<<std::endl;
 	std::cout<<"-----------------------------------"<<std::endl;
-	//TODO print all stats
 }
 
 z3::model Sampler::start_epoch(){
