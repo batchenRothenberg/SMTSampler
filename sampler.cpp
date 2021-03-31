@@ -17,12 +17,15 @@ Sampler::Sampler(std::string input, int max_samples, double max_time, int max_ep
     solver.set(params);
 
 	parse_formula(input);
-    opt.add(original_formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
-    solver.add(original_formula); //adds formula as constraint to normal solver
 
     compute_and_print_formula_stats();
 
     results_file.open(input + ".samples");
+}
+
+void Sampler::initialize_solvers(){
+    opt.add(original_formula); //adds formula as hard constraint to optimization solver (no weight specified for it)
+    solver.add(original_formula); //adds formula as constraint to normal solver
 }
 
 double Sampler::duration(struct timespec * a, struct timespec * b) {

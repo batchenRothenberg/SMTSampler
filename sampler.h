@@ -66,11 +66,15 @@ public:
     /*
      * Initializes limits and parameters.
      * Seeds random number generator.
-     * Parses input file to get formula and initializes solvers with formula.
+     * Parses input file to get formula.
      * Computes formula statistics.
      * Creates output file (stored in results_file).
      */
     Sampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy);
+    /*
+     * Initializes solvers (MAX-SMT and SMT) with formula.
+     */
+    void initialize_solvers();
     /*
      * Checks if original_formula is satisfiable.
      * If not, or result is known, calls finish and exits.
