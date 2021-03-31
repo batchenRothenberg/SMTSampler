@@ -27,6 +27,7 @@ class Sampler{
     //Time management
 	struct timespec start_time;
 	struct timespec epoch_start_time;
+	//TODO take these max values into account during computation
 	int max_samples;
 	double max_time;
 	int max_epoch_samples;
