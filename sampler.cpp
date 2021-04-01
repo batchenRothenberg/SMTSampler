@@ -146,6 +146,7 @@ z3::model Sampler::start_epoch(){
     valid_samples++;
 
 //    save_and_output_sample_if_unique(Z3_model_to_string(c,model));
+    //TODO assert model satisfies formula
     save_and_output_sample_if_unique(model_to_string(model));
 
 	return model;
