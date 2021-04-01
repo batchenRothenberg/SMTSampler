@@ -64,8 +64,8 @@ int main(int argc, char * argv[]) {
     }
 
     MEGASampler s(argv[argc-1], max_samples, max_time, max_epoch_samples, max_epoch_time, strategy);
-    s.initialize_solvers();
 	s.set_timer_on("total");
+    s.initialize_solvers();
     s.set_timer_on("initial_solving");
     s.check_if_satisfiable();
     s.accumulate_time("initial_solving");
