@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) {
     	exit(0);
     }
 
-    Sampler s(argv[argc-1], max_samples, max_time, max_epoch_samples, max_epoch_time, strategy);
+    MEGASampler s(argv[argc-1], max_samples, max_time, max_epoch_samples, max_epoch_time, strategy);
 	s.set_timer_on("total");
     s.set_timer_on("initial_solving");
     s.check_if_satisfiable();

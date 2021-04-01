@@ -21,6 +21,7 @@ std::string bv_string(Z3_ast ast, Z3_context ctx);
 
 class Sampler{
 
+protected:
     //Settings
     bool random_soft_bit = false; //TODO enable change from cmd line
 

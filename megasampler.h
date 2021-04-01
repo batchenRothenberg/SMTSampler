@@ -1,19 +1,14 @@
 #ifndef MEGASAMPLER_H_
 #define MEGASAMPLER_H_
 
-#include <z3++.h>
-#include <unordered_set>
+#include "sampler.h"
 
-class MEGASampler {
-    z3::context c;
-    const z3::model & model;
-    const z3::expr & original_formula;
+class MEGASampler : public Sampler {
+
     z3::expr simpl_formula;
-    int total_samples = 0;
-    std::unordered_set<std::string> samples;
 
 public:
-    MEGASampler(const z3::expr & original_formula);
+    MEGASampler(std::string input, int max_samples, double max_time, int max_epoch_samples, double max_epoch_time, int strategy);
     /*
      * Finds additional valid models (samples) of the formula
      * (based on the given model, which is assumed valid).
